@@ -8,12 +8,14 @@
 #include <time.h>
 #include <string.h>
 
-static void ipv4ipamSim(int count);
+static void randomSim(int count);
+static int ipam(void);
 
 static void countBytes(void* ref, void const* data, size_t len)
 {
 	uint64_t* cnt = ref;
-	cnt += len;
+	*cnt += len;
+	D(printf("countBytes: len=%lu, cnt=%lu\n", len, *cnt));
 }
 
 #define WBCHUNK 4096
@@ -68,7 +70,9 @@ static size_t buffRead(void* ref, void* data, size_t len)
 int main(int argc, char* argv[])
 {
 	if (argc > 1) {
-		ipv4ipamSim(24);
+		if (strcmp(argv[1], "ipam") == 0)
+			return ipam();
+		randomSim(24);
 		return 0;
 	}
 
@@ -152,10 +156,7 @@ int main(int argc, char* argv[])
 	return 0;
 }
 
-/*
-  Make 
- */
-static void ipv4ipamSim(int count)
+static void randomSim(int count)
 {
 	srand(time(NULL));
 	uint64_t sum = 0;
@@ -174,4 +175,25 @@ static void ipv4ipamSim(int count)
 		bmtDelete(bmt);
 	}
 	Dx(printf("Average write; %lu\n", sum / count));
+}
+
+static int ipam(void)
+{
+	struct BitmapTree* bmt;
+	uint64_t byteCount;
+	uint64_t offset;
+
+	//bmt = bmtCreate(0x100000000);
+	bmt = bmtCreate(1UL << 32);
+	bmtSetBranch(bmt, 0, 0);
+	// Free 10.0.0.0/8
+	assert(bmtClearBranch(bmt, 0x0a000000, 0x01000000) == 0);
+	bmtPrint(bmt);printf("---\n");
+	byteCount = 0;
+	bmtWrite(bmt, countBytes, &byteCount);
+	printf("Size stored; %lu\n", byteCount);
+	assert(bmtReserveBit(bmt, &offset) == 0);
+	assert(offset == 0x0a000000);
+	bmtDelete(bmt);
+	return 0;
 }

@@ -27,7 +27,38 @@
         zzzz - The "zero" leg.
         oooo - The "one" leg.
         Leg encoding; 0b100 - NULL, 0b101 - FULL, 0b111 - pointer
- */
+
+  Stored Size worst case;
+
+    The worst case is when all possibe bit-sets (uint64_t) are used
+    but none is empty or full (in which case they would be pruned).
+
+	For a BitmapTree of size (always a power of 2) the tree 
+    depth is at most;
+
+      depth = size/64     # (64 is the number of bits in an uint64_t)
+
+    the number of nodes will be;
+
+	  maxnodes = depth * (depth+1) / 2   # O(size^2)
+
+    Example; a 2^16 BitmapTree;
+
+      depth = 2^16 / 64 = 2^10 = 1024
+      nodes = 1024 * 1025 / 2 = 524800
+
+      On top of that we have the actual bit-sets which are;
+
+      size/8 = 8192
+
+      An uncompressed bitarray would only use 8KB.
+
+  Stored Size best case;
+
+    A completely empty (or full) BitmapTree will take 3 byte for *any*
+    size, including the max 2^64 (in which is 2097152 PetaByte uncompressed)
+
+*/
 
 #define WRITE(x) writeFn(userRef, &x, sizeof(x));
 
